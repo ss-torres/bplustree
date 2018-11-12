@@ -2,7 +2,7 @@
 #include "ui_widget.h"
 #include "bplustree.h"
 
-const QString ptShow = QStringLiteral("#");
+const QString ptShow = QStringLiteral("->");
 
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
@@ -17,31 +17,37 @@ Widget::~Widget()
     delete ui;
 }
 
+void addTreeNode(QTreeWidgetItem* parent, const bnode<int, int>* insertNode);
+
+template <typename ParentType>
+void addTreeChild(ParentType* parent, void *child)
+{
+    auto item = new QTreeWidgetItem(parent);
+    item->setText(0, ptShow);
+    addTreeNode(item, reinterpret_cast<const bnode<int, int>*>(child));
+}
+
 void addTreeNode(QTreeWidgetItem* parent, const bnode<int, int>* insertNode)
 {
     for (size_t idx = 0; idx != insertNode->keys.size(); ++idx)
     {
         if (!insertNode->leaf)
         {
-            auto item = new QTreeWidgetItem(parent);
-            item->setText(0, ptShow);
-            addTreeNode(item, reinterpret_cast<bnode<int,int>*>(insertNode->children[idx]));
+            addTreeChild(parent, insertNode->children[idx]);
         }
         auto item = new QTreeWidgetItem(parent);
         item->setText(0, QString::number(insertNode->keys[idx]));
     }
     if (!insertNode->leaf)
     {
-        auto item = new QTreeWidgetItem(parent);
-        item->setText(0, ptShow);
-        addTreeNode(item, reinterpret_cast<bnode<int, int>*>(insertNode->children.back()));
+        addTreeChild(parent, insertNode->children.back());
     }
 }
 
 void Widget::createBPlusTree()
 {
     bplustree<int, int, 5> tree;
-    for (auto i = 0; i != 12; ++i)
+    for (auto i = 0; i != 30; ++i)
     {
         tree.insert(i, new int(i));
     }
@@ -51,10 +57,7 @@ void Widget::createBPlusTree()
     {
         if (!root->leaf)
         {
-            auto item = new QTreeWidgetItem;
-            item->setText(0, ptShow);
-            addTreeNode(item, reinterpret_cast<bnode<int, int>*>(root->children[idx]));
-            ui->treeWidget->addTopLevelItem(item);
+            addTreeChild(ui->treeWidget, root->children[idx]);
         }
         auto item = new QTreeWidgetItem;
         item->setText(0, QString::number(root->keys[idx]));
@@ -62,10 +65,7 @@ void Widget::createBPlusTree()
     }
     if (!root->leaf)
     {
-        auto item = new QTreeWidgetItem;
-        item->setText(0, ptShow);
-        addTreeNode(item, reinterpret_cast<bnode<int, int>*>(root->children.back()));
-        ui->treeWidget->addTopLevelItem(item);
+        addTreeChild(ui->treeWidget, root->children.back());
     }
 
     ui->treeWidget->expandAll();
